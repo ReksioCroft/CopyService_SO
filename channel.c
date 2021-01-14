@@ -1,56 +1,56 @@
 #include "channel.h"
 
 copyjob_stats* client( copyjob_t* job ) {
-    int pipe;
+    int channel;
 
     if ( job != NULL ) {
-        char* pipeName = "/tmp/clientToDaemonFIFO";
-        mkfifo( pipeName, 0666 );
+        char* channelName = "./clientFIFO";
+        mkfifo( channelName, 0666 );
 
-        pipe = open( pipeName, O_WRONLY );
-        write( pipe, job, sizeof( copyjob_t ) );
-        close( pipe );
+        channel = open( channelName, O_WRONLY );
+        write( channel, job, sizeof( copyjob_t ) );
+        close( channel );
 
         free( job );
         return NULL;
     }
     else {
-        copyjob_stats* msg = ( copyjob_stats* ) calloc( 1, sizeof( copyjob_stats ) );
-        char* pipeName = "/tmp/daemonToClientFIFO";
-        mkfifo( pipeName, 0666 );
+        copyjob_stats* myJob = ( copyjob_stats* ) calloc( 1, sizeof( copyjob_stats ) );
+        char* channelName = "./daemonFIFO";
+        mkfifo( channelName, 0666 );
 
-        pipe = open( pipeName, O_RDONLY );
-        read( pipe, msg, sizeof( copyjob_stats ) );
-        close( pipe );
+        channel = open( channelName, O_RDONLY );
+        read( channel, myJob, sizeof( copyjob_stats ) );
+        close( channel );
 
-        return msg;
+        return myJob;
     }
 }
 
 copyjob_t* myDaemon( copyjob_stats* job ) {
-    int pipe;
+    int channel;
 
     if ( job != NULL ) {
-        char* pipeName = "/tmp/daemonToClientFIFO";
-        mkfifo( pipeName, 0666 );
+        char* channelName = "./daemonFIFO";
+        mkfifo( channelName, 0666 );
 
-        pipe = open( pipeName, O_WRONLY );
-        write( pipe, job, sizeof( copyjob_stats ) );
-        close( pipe );
+        channel = open( channelName, O_WRONLY );
+        write( channel, job, sizeof( copyjob_stats ) );
+        close( channel );
 
         free( job );
         return NULL;
     }
     else {
-        copyjob_t* msg = ( copyjob_t* ) calloc( 1, sizeof( copyjob_t ) );
+        copyjob_t* myJob = ( copyjob_t* ) calloc( 1, sizeof( copyjob_t ) );
 
-        char* pipeName = "/tmp/clientToDaemonFIFO";
-        mkfifo( pipeName, 0666 );
+        char* channelName = "./clientFIFO";
+        mkfifo( channelName, 0666 );
 
-        pipe = open( pipeName, O_RDONLY );
-        read( pipe, msg, sizeof( copyjob_t ) );
-        close( pipe );
+        channel = open( channelName, O_RDONLY );
+        read( channel, myJob, sizeof( copyjob_t ) );
+        close( channel );
 
-        return msg;
+        return myJob;
     }
 }

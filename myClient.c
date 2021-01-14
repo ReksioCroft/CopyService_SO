@@ -46,7 +46,11 @@ int main( int argc, char* argv[] ) {
         else if ( !strcmp( messageClient->task, "KILLDAEMON" ) && argc == 2 ) {
             client( messageClient );
         }
+        else
+            printf( "Comenziile accpetate sunt: copy, cancel, pause, resume, status, listJobs, KILLDAEMON\n" );
     }
+    else
+        printf( "Nr insuficient de argumente\n" );
 
     return 0;
 }

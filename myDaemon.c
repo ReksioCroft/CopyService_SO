@@ -6,13 +6,13 @@
 
 sem_t sem;
 pthread_mutex_t mtx;
-pthread_t threads[1024];
-copyjob_stats* finishedThreads[1024];
-pthread_t stackFinishedThreads[1024];
+pthread_t threads[nMax];
+copyjob_stats* finishedThreads[nMax];
+pthread_t stackFinishedThreads[nMax];
 int stackPointer = 0;
 int nrFinishedThreads = 0;
-float progress[1024];
-bool isPaused[1024];
+float progress[nMax];
+bool isPaused[nMax];
 int maxThreads = 4;
 int maxJobs = 10;
 
@@ -47,16 +47,19 @@ void* copy_createjob( void* myJob ) {
             sleep( 1 );
         }
     }
-    write( 1, "finished copy\n", 14 );
+    copyjob_stats* sol = ( copyjob_stats* ) calloc( 1, sizeof( copyjob_stats ) );
     if ( nread < 0 ) {
         perror( "read buf error\n" );
-        pthread_cancel( pthread_self() );
+        sol->progres = 0;
+        sol->threadId = job->threadId;
+        strcpy( sol->state, "read buf error" );
     }
-    copyjob_stats* sol = ( copyjob_stats* ) calloc( 1, sizeof( copyjob_stats ) );
-    sol->progres = 1;
-    sol->threadId = job->threadId;
-    strcpy( sol->state, "complet" );
-
+    else {
+        write( 1, "finished copy\n", 14 );
+        sol->progres = 1;
+        sol->threadId = job->threadId;
+        strcpy( sol->state, "complet" );
+    }
     pthread_mutex_lock( &mtx );
     finishedThreads[ nrFinishedThreads++ ] = sol;
     stackFinishedThreads[ stackPointer++ ] = threads[ job->threadId ];
@@ -77,7 +80,7 @@ void* copy_cancel( void* Job ) {
         perror( NULL );
         pthread_cancel( pthread_self() );
     }
-    copyjob_t* job = Job;
+    copyjob_t* job = ( copyjob_t* ) Job;
     pthread_mutex_lock( &mtx );
     if ( threads[ job->threadId ] ) {
         pthread_cancel( threads[ job->threadId ] );

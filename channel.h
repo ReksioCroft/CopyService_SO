@@ -8,11 +8,12 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#define nMax 1024
 
 typedef struct copyjob_T{
-    char src[1024];
-    char dst[1024];
-    char task[50];
+    char src[nMax];
+    char dst[nMax];
+    char task[10];
     int threadId;
 } copyjob_t;
 
