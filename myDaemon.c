@@ -174,10 +174,12 @@ void* listjobs() {
         pthread_cancel( pthread_self() );
     }
     pthread_mutex_lock( &mtx );
+    copyjob_stats* jobFirst = ( copyjob_stats* ) calloc( 1, sizeof( copyjob_stats ) );
     copyjob_stats* lastjob = NULL;
     copyjob_stats* firstJob = NULL;
     for ( int i = 0; i < maxJobs; i++ ) {
         if ( threads[ i ] != 0 ) {
+            jobFirst->nrJobs++;
             copyjob_stats* jobCurent = ( copyjob_stats* ) calloc( 1, sizeof( copyjob_stats ) );
             jobCurent->threadId = i;
             jobCurent->progres = progress[ i ];
@@ -194,6 +196,7 @@ void* listjobs() {
         }
     }
     for ( int i = 0; i < nrFinishedThreads; i++ ) {
+        jobFirst->nrJobs++;
         copyjob_stats* jobCurent = ( copyjob_stats* ) calloc( 1, sizeof( copyjob_stats ) );
         jobCurent->threadId = -1;
         jobCurent->progres = finishedThreads[ i ]->progres;
@@ -212,22 +215,20 @@ void* listjobs() {
     stackFinishedThreads[ stackPointer++ ] = pthread_self();
     pthread_mutex_unlock( &mtx );
 
+    if ( jobFirst->nrJobs == 0 ) {
+        strcpy( jobFirst->state, "Nu exista niciun job activ" );
+    }
+    jobFirst->nextJob = firstJob;
+
     copyjob_t* selfJob = calloc( 1, sizeof( copyjob_t ) );
     strcpy( selfJob->task, "self" );
     client( selfJob );
 
-    if ( firstJob == NULL ) {
-        firstJob = ( copyjob_stats* ) calloc( 1, sizeof( copyjob_stats ) );
-        firstJob->threadId = -1;
-        firstJob->nextJob = NULL;
-        firstJob->progres = 0;
-        strcpy( firstJob->state, "Nu exista niciun job activ" );
-    }
     if ( sem_post( &sem ) ) {
         perror( NULL );
         pthread_cancel( pthread_self() );
     }
-    return firstJob;
+    return jobFirst;
 }
 
 
@@ -357,7 +358,20 @@ int main() {
                 }
                 daemon_message = ( copyjob_stats* ) result;
                 if ( daemon_message != NULL ) {
-                    myDaemon( daemon_message );
+                    if ( daemon_message->nrJobs > 0 ) {///suntem obligati sa serializam lista la transmiterea prin pipe
+                        copyjob_stats* nextPtr = daemon_message->nextJob;
+                        daemon_message->nextJob = NULL;
+                        myDaemon( daemon_message );
+                        while ( nextPtr != NULL ) {
+                            daemon_message = nextPtr;
+                            nextPtr = nextPtr->nextJob;
+                            daemon_message->nextJob = NULL;
+                            myDaemon( daemon_message );
+                        }
+                    }
+                    else {
+                        myDaemon( daemon_message );
+                    }
                 }
             }
             free( client_message );

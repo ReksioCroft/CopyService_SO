@@ -19,6 +19,7 @@ typedef struct copyjob_T{
 typedef struct copyjob_Stats {
     float progres;
     char state[32];
+    int nrJobs;
     struct copyjob_Stats* nextJob;
     int threadId;
 } copyjob_stats;

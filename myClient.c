@@ -35,11 +35,12 @@ int main( int argc, char* argv[] ) {
         else if ( !strcmp( messageClient->task, "listJobs" ) && argc == 2 ) {
             client( messageClient );
             copyjob_stats* response = client( NULL );
-            while ( response != NULL ) {
+            int nr = response->nrJobs;
+            free( response );
+            for ( int i = 0; i < nr; i++ ) {
+                response = client( NULL );
                 printf( "%d\n%f%%\n%s\n...\n\n", response->threadId, response->progres * 100, response->state );
-                copyjob_stats* aux = response;
-                response = response->nextJob;
-                free( aux );
+                free( response );
             }
         }
         else if ( !strcmp( messageClient->task, "KILLDAEMON" ) && argc == 2 ) {
