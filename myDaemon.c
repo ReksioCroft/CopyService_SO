@@ -27,6 +27,8 @@ void* copy_createjob( void* myJob ) {
         pthread_cancel( pthread_self() );
     }
     copyjob_t* job = ( copyjob_t* ) myJob;
+    write( 1, "Started copy ", 13 );
+    printf( "%d\n", job->threadId );
     int fin, fout, nread;
     fin = open( job->src, O_RDONLY );
     fout = open( job->dst, O_WRONLY | O_CREAT | O_TRUNC, 0666 );
@@ -40,7 +42,6 @@ void* copy_createjob( void* myJob ) {
         sleep( 5 );
         write( fout, buff, nread );
         totalBytesRead += nread;
-        printf( "%d\n", job->threadId );
         progress[ job->threadId ] = mini( ( float ) totalBytesRead / sb.st_size, 1 );
         nread = read( fin, buff, 4096 );
         while ( isPaused[ job->threadId ] == true ) { ///asteptam daca threadul e pus pe pauza
@@ -270,7 +271,6 @@ int main() {
                 perror( NULL );
                 return errno;
             }
-            write( 1, "Started copy\n", 13 );
             daemon_message = ( copyjob_stats* ) calloc( 1, sizeof( copyjob_stats ) );
             daemon_message->threadId = pozId;
             strcpy( daemon_message->state, "in progres" );
